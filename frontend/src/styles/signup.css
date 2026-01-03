@@ -51,8 +51,6 @@
   margin-bottom: 28px;
 }
 
-
-
 /* Form */
 .signup-form {
   display: flex;
@@ -67,36 +65,11 @@
   gap: 12px;
 }
 
-/* Textarea */
-.signup-textarea {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.signup-textarea.signup-textarea-full {
-  grid-column: 1 / -1; /* Span full width in grid */
-}
-
-.signup-textarea label {
-  font-size: 14px;
-  font-weight: 500;
-  color: #0f4c75;
-}
-
-.signup-textarea textarea {
-  min-height: 100px;
-  padding: 12px;
-  border-radius: 10px;
-  border: 1px solid #e2e8f0;
-  font-family: 'Inter', sans-serif;
-  font-size: 14px;
-  resize: vertical;
-}
-
-.signup-textarea textarea:focus {
-  outline: none;
-  border-color: #3b82f6;
+/* Password Section */
+.signup-password-section {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
 }
 
 /* Footer */
@@ -105,29 +78,6 @@
   text-align: center;
   font-size: 14px;
   color: #475569;
-}
-
-/* Button styling to match login page */
-.btn-primary {
-  background-color: #3b82f6;
-  color: white;
-  border: none;
-  padding: 14px 24px;
-  border-radius: 10px;
-  font-weight: 500;
-  font-size: 16px;
-  cursor: pointer;
-  width: 100%;
-  transition: background-color 0.3s;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background-color: #2563eb;
-}
-
-.btn-primary:disabled {
-  background-color: #9ca3af;
-  cursor: not-allowed;
 }
 
 .signup-footer a {
@@ -157,6 +107,10 @@
   .signup-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+
+  .signup-password-section {
+    grid-template-columns: 1fr;
+  }
   
   .signup-title {
     font-size: 28px;
@@ -176,9 +130,9 @@
   .signup-form {
     gap: 16px;
   }
-  
-  .signup-textarea textarea {
-    min-height: 70px;
+
+  .signup-password-section {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -195,12 +149,12 @@
   .signup-grid {
     grid-template-columns: 1fr;
   }
+
+  .signup-password-section {
+    grid-template-columns: 1fr;
+  }
   
   .signup-form {
     gap: 18px;
-  }
-  
-  .signup-textarea textarea {
-    min-height: 80px;
   }
 }
