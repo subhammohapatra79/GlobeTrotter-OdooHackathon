@@ -4,6 +4,7 @@
  */
 
 const userModel = require('../models/user.model');
+const userProfileModel = require('../models/userProfile.model');
 const hashUtil = require('../utils/hash.util');
 const jwtUtil = require('../utils/jwt.util');
 const { sendSuccess, sendError } = require('../utils/response.util');
@@ -14,7 +15,7 @@ const { sendSuccess, sendError } = require('../utils/response.util');
  */
 const signup = async (req, res) => {
   try {
-    const { email, password, firstName, lastName } = req.body;
+    const { email, password, firstName, lastName, phone, city, country } = req.body;
 
     // Check if user already exists
     const existingUser = await userModel.findByEmail(email);
@@ -33,6 +34,22 @@ const signup = async (req, res) => {
       last_name: lastName
     });
 
+    // Create user profile with extended info
+    try {
+      await userProfileModel.create({
+        userId: user.id,
+        firstName: firstName || null,
+        lastName: lastName || null,
+        phoneNumber: phone || null,
+        city: city || null,
+        country: country || null,
+        additionalInfo: null
+      });
+    } catch (profileError) {
+      console.error('Error creating user profile:', profileError);
+      // Don't fail signup if profile creation fails
+    }
+
     // Generate token
     const token = jwtUtil.generateToken({
       id: user.id,
@@ -47,7 +64,9 @@ const signup = async (req, res) => {
         lastName: user.last_name
       },
       token
-    });    console.log('User created 201');  } catch (error) {
+    });
+    console.log('User created 201');
+  } catch (error) {
     console.error('Signup error:', error);
     sendError(res, 500, 'Error registering user');
   }

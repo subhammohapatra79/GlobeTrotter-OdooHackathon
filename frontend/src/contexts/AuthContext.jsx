@@ -54,11 +54,11 @@ export const AuthProvider = ({ children }) => {
   /**
    * Sign up
    */
-  const signup = useCallback(async (email, password, firstName, lastName) => {
+  const signup = useCallback(async (email, password, firstName, lastName, phone, city, country) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await authAPI.signup(email, password, firstName, lastName);
+      const response = await authAPI.signup(email, password, firstName, lastName, phone, city, country);
       console.log('Signup response:', response);
 
       const tokenData = response.data || response;

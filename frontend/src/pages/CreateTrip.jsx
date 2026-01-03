@@ -1,24 +1,36 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import useAuth from '../hooks/useAuth';
+import { tripAPI } from '../services/api';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import '../styles/create-trip.css';
 
 const CreateTrip = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, authLoading } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    // Wait for auth to complete loading
+    if (authLoading) {
+      return;
+    }
+    
+    // Redirect to login if not authenticated
+    if (!isAuthenticated) {
+      navigate('/login');
+    }
+  }, [isAuthenticated, authLoading, navigate]);
 
   const [formData, setFormData] = useState({
     name: '',
     destination: '',
     startDate: '',
-    endDate: ''
+    endDate: '',
+    description: ''
   });
-
-  const env = import.meta.env.VITE_ENV || 'prod';
-  if (env !== 'dev' && !isAuthenticated) {
-    navigate('/login');
-    return null;
-  }
 
   const handleChange = (e) => {
     setFormData(prev => ({
@@ -27,10 +39,43 @@ const CreateTrip = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Backend / AI integration later
-    console.log(formData);
+    
+    // Validate inputs
+    if (!formData.name || !formData.destination || !formData.startDate || !formData.endDate) {
+      setError('Please fill in all required fields');
+      return;
+    }
+
+    // Validate dates
+    if (new Date(formData.startDate) >= new Date(formData.endDate)) {
+      setError('End date must be after start date');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Call the API to create the trip
+      await tripAPI.create(
+        formData.name,
+        formData.description || `Trip to ${formData.destination}`,
+        formData.startDate,
+        formData.endDate
+      );
+
+      console.log('Trip created successfully, redirecting to dashboard');
+      
+      // Redirect to dashboard which will fetch the new trip
+      navigate('/dashboard');
+    } catch (err) {
+      console.error('Failed to create trip:', err);
+      setError(err?.message || 'Failed to create trip. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -46,6 +91,8 @@ const CreateTrip = () => {
 
         {/* Form */}
         <form className="trip-form" onSubmit={handleSubmit}>
+          {error && <div className="error-message">{error}</div>}
+          
           <Input
             label="Trip Name"
             name="name"
@@ -62,6 +109,15 @@ const CreateTrip = () => {
             value={formData.destination}
             onChange={handleChange}
             required
+          />
+
+          <Input
+            label="Description (Optional)"
+            name="description"
+            placeholder="Add trip details..."
+            value={formData.description}
+            onChange={handleChange}
+            as="textarea"
           />
 
           <div className="form-row">
@@ -85,11 +141,14 @@ const CreateTrip = () => {
           </div>
 
           <div className="form-actions">
-            <Button type="submit">Create Trip</Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? 'Creating Trip...' : 'Create Trip'}
+            </Button>
             <Button
               type="button"
               variant="secondary"
               onClick={() => navigate('/dashboard')}
+              disabled={loading}
             >
               Cancel
             </Button>

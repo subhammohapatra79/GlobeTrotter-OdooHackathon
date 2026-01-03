@@ -59,10 +59,20 @@ export const citiesAPI = {
 export const authAPI = {
   getCurrentUser: () =>
     api.get('/auth/me'),
-  signup: (email, password, firstName, lastName) =>
-    api.post('/auth/signup', { email, password, firstName, lastName }),
+  signup: (email, password, firstName, lastName, phone, city, country) =>
+    api.post('/auth/signup', { email, password, firstName, lastName, phone, city, country }),
   login: (email, password) =>
     api.post('/auth/login', { email, password })
+};
+
+/**
+ * Profile endpoints
+ */
+export const profileAPI = {
+  get: () =>
+    api.get('/profile'),
+  update: (profileData) =>
+    api.put('/profile', profileData)
 };
 
 /**
@@ -139,6 +149,10 @@ export const activityAPI = {
 export const budgetAPI = {
   getByTrip: (tripId) =>
     api.get(`/trips/${tripId}/budget`),
+  create: (tripId, totalCost) =>
+    api.post(`/trips/${tripId}/budget`, { total_cost: totalCost }),
+  update: (tripId, totalCost) =>
+    api.put(`/trips/${tripId}/budget`, { total_cost: totalCost }),
   recalculate: (tripId) =>
     api.post(`/trips/${tripId}/budget/recalculate`)
 };

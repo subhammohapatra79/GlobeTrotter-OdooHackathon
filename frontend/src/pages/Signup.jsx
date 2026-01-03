@@ -110,7 +110,15 @@ const Signup = () => {
       return;
     }
 
-    const result = await signup(formData.email, formData.password, formData.firstName, formData.lastName);
+    const result = await signup(
+      formData.email, 
+      formData.password, 
+      formData.firstName, 
+      formData.lastName,
+      formData.phone,
+      formData.city,
+      formData.country
+    );
     if (!result.success) {
       setErrors({ general: result.error?.message || 'Signup failed' });
     }

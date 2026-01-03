@@ -115,11 +115,38 @@ const validateActivity = [
     .optional()
 ];
 
+/**
+ * Validators for profile
+ */
+const validateProfile = [
+  body('firstName')
+    .trim()
+    .notEmpty()
+    .withMessage('First name is required'),
+  body('lastName')
+    .trim()
+    .notEmpty()
+    .withMessage('Last name is required'),
+  body('phoneNumber')
+    .trim()
+    .optional(),
+  body('city')
+    .trim()
+    .optional(),
+  body('country')
+    .trim()
+    .optional(),
+  body('additionalInfo')
+    .trim()
+    .optional()
+];
+
 module.exports = {
   handleValidationErrors,
   validateSignup,
   validateLogin,
   validateTrip,
   validateTripStop,
-  validateActivity
+  validateActivity,
+  validateProfile
 };

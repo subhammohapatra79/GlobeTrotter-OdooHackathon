@@ -58,6 +58,8 @@ const createTrip = async (req, res) => {
     const userId = req.user.id;
     const { name, description, startDate, endDate } = req.body;
 
+    console.log('Creating trip with:', { userId, name, description, startDate, endDate });
+
     // Validate dates
     if (new Date(endDate) < new Date(startDate)) {
       return sendError(res, 400, 'End date must be after start date');
@@ -72,14 +74,23 @@ const createTrip = async (req, res) => {
       end_date: endDate
     });
 
+    console.log('Trip created:', trip);
+
     // Create budget for trip
-    await budgetModel.create(trip.id, 0);
+    try {
+      await budgetModel.create(trip.id, 0);
+      console.log('Budget created for trip:', trip.id);
+    } catch (budgetError) {
+      console.error('Error creating budget, but trip exists:', budgetError);
+      // Don't fail trip creation if budget fails
+    }
 
     sendSuccess(res, 201, 'Trip created successfully', {
       trip
     });
   } catch (error) {
     console.error('Create trip error:', error);
+    console.error('Error stack:', error.stack);
     sendError(res, 500, 'Error creating trip');
   }
 };

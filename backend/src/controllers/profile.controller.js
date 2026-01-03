@@ -13,10 +13,36 @@ const { sendSuccess, sendError } = require('../utils/response.util');
 const getProfile = async (req, res) => {
   try {
     const userId = req.user.id;
-    const profile = await userProfileModel.findByUserId(userId);
+    let profile = await userProfileModel.findByUserId(userId);
 
+    // If profile doesn't exist, create one
     if (!profile) {
-      return sendError(res, 404, 'Profile not found');
+      console.log('Profile not found, creating default profile for user:', userId);
+      try {
+        profile = await userProfileModel.create({
+          userId: userId,
+          firstName: req.user.first_name || '',
+          lastName: req.user.last_name || '',
+          phoneNumber: null,
+          city: null,
+          country: null,
+          additionalInfo: null
+        });
+      } catch (createError) {
+        console.error('Error creating default profile:', createError);
+        // Return what we have from user data
+        return sendSuccess(res, 200, 'User profile (no extended profile)', {
+          profile: {
+            id: null,
+            firstName: req.user.first_name || '',
+            lastName: req.user.last_name || '',
+            phoneNumber: null,
+            city: null,
+            country: null,
+            additionalInfo: null
+          }
+        });
+      }
     }
 
     sendSuccess(res, 200, 'Profile retrieved successfully', {

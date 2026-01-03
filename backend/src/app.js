@@ -6,6 +6,7 @@
 const express = require('express');
 const cors = require('cors');
 const authRoutes = require('./routes/auth.routes');
+const profileRoutes = require('./routes/profile.routes');
 const tripRoutes = require('./routes/trip.routes');
 const tripStopRoutes = require('./routes/tripStop.routes');
 const activityRoutes = require('./routes/activity.routes');
@@ -32,6 +33,7 @@ app.get('/health', (req, res) => {
  * API Routes
  */
 app.use('/api/auth', authRoutes);
+app.use('/api/profile', profileRoutes);
 app.use('/api/trips', tripRoutes);
 app.use('/api/trips/:tripId/stops', tripStopRoutes);
 app.use('/api/trips/:tripId/stops/:stopId/activities', activityRoutes);

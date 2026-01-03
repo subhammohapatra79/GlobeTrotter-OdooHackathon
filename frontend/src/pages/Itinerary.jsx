@@ -1,123 +1,260 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import useAuth from '../hooks/useAuth';
+import { tripAPI, tripStopAPI, budgetAPI, activityAPI } from '../services/api';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
 import '../styles/itinerary.css';
 
 const Itinerary = () => {
   const navigate = useNavigate();
+  const { tripId } = useParams();
+  const { isAuthenticated, authLoading } = useAuth();
+
+  const [trip, setTrip] = useState(null);
+  const [stops, setStops] = useState([]);
+  const [budget, setBudget] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const [showModal, setShowModal] = useState(false);
   const [showActivityModal, setShowActivityModal] = useState(false);
   const [editingBudget, setEditingBudget] = useState(false);
   const [selectedStopId, setSelectedStopId] = useState(null);
-  const [newActivity, setNewActivity] = useState({ name: '', cost: '' });
+
+  const [newActivity, setNewActivity] = useState({ name: '', cost: '', category: '', durationHours: '' });
   const [newStop, setNewStop] = useState({
     city: '',
     country: '',
-    arrival: '',
-    departure: '',
+    startDate: '',
+    endDate: '',
     notes: ''
   });
-  const [budgetLimit, setBudgetLimit] = useState(153550);
-  const [tempBudgetInput, setTempBudgetInput] = useState('153550');
+  const [tempBudgetInput, setTempBudgetInput] = useState('0');
 
-  const [stops, setStops] = useState([
-    {
-      id: 1,
-      city: 'London, UK',
-      dates: 'May 10 – May 15',
-      activities: [
-        { id: 1, name: 'Visit the Tower of London', cost: 3320 },
-        { id: 2, name: 'London Eye', cost: 2905 },
-        { id: 3, name: 'West End Show', cost: 5810 }
-      ]
-    },
-    {
-      id: 2,
-      city: 'Paris, France',
-      dates: 'May 16 – May 20',
-      activities: [
-        { id: 1, name: 'Eiffel Tower Summit', cost: 2490 },
-        { id: 2, name: 'Louvre Museum', cost: 2075 },
-        { id: 3, name: 'Seine River Cruise', cost: 2075 }
-      ]
-    },
-    {
-      id: 3,
-      city: 'Rome, Italy',
-      dates: 'May 21 – May 25',
-      activities: [
-        { id: 1, name: 'Colosseum & Forum', cost: 3735 },
-        { id: 2, name: 'Vatican Tour', cost: 4150 },
-        { id: 3, name: 'Trevi Fountain', cost: 0 }
-      ]
+  // Check auth and fetch data
+  useEffect(() => {
+    if (authLoading) return;
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
     }
-  ]);
+    if (tripId) {
+      fetchTripData();
+    }
+  }, [isAuthenticated, authLoading, tripId, navigate]);
 
-  // Calculate total cost from all activities
+  const fetchTripData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch trip details
+      const tripResponse = await tripAPI.getById(tripId);
+      const tripData = tripResponse.data?.trip || tripResponse.trip;
+      setTrip(tripData);
+      console.log('Trip data:', tripData);
+
+      // Fetch stops for this trip
+      const stopsResponse = await tripStopAPI.getAll(tripId);
+      const stopsData = stopsResponse.data?.stops || stopsResponse.stops || [];
+      
+      // Fetch activities for each stop
+      const stopsWithActivities = await Promise.all(
+        stopsData.map(async (stop) => {
+          try {
+            const activitiesResponse = await activityAPI.getAll(tripId, stop.id);
+            const activities = activitiesResponse.data?.activities || activitiesResponse.activities || [];
+            return { ...stop, activities };
+          } catch (err) {
+            console.error(`Failed to fetch activities for stop ${stop.id}:`, err);
+            return { ...stop, activities: [] };
+          }
+        })
+      );
+      setStops(stopsWithActivities);
+      console.log('Stops with activities:', stopsWithActivities);
+
+      // Fetch budget
+      const budgetResponse = await budgetAPI.getByTrip(tripId);
+      const budgetData = budgetResponse.data?.budget || budgetResponse.budget;
+      setBudget(budgetData);
+      if (budgetData) {
+        setTempBudgetInput(budgetData.total_cost?.toString() || '0');
+      }
+      console.log('Budget data:', budgetData);
+    } catch (err) {
+      console.error('Failed to fetch trip data:', err);
+      setError(err?.message || 'Failed to load trip data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Calculate totals
   const calculateTotalCost = () => {
     return stops.reduce((total, stop) => {
-      return total + stop.activities.reduce((stopTotal, activity) => stopTotal + activity.cost, 0);
+      return total + (stop.activities?.reduce((stopTotal, activity) => stopTotal + (activity.cost || 0), 0) || 0);
     }, 0);
   };
 
   const totalCost = calculateTotalCost();
+  const budgetLimit = budget?.total_cost || 0;
   const remainingBudget = budgetLimit - totalCost;
-  const budgetPercentage = (totalCost / budgetLimit) * 100;
-  const isOverBudget = totalCost > budgetLimit;
+  const budgetPercentage = budgetLimit > 0 ? (totalCost / budgetLimit) * 100 : 0;
+  const isOverBudget = totalCost > budgetLimit && budgetLimit > 0;
 
-  const handleUpdateBudget = () => {
-    const newBudget = parseInt(tempBudgetInput) || budgetLimit;
-    setBudgetLimit(newBudget);
-    setEditingBudget(false);
-  };
+  const handleAddStop = async () => {
+    if (!newStop.city || !newStop.country || !newStop.startDate || !newStop.endDate) {
+      setError('Please fill in all required fields');
+      return;
+    }
 
-  const handleAddStop = () => {
-    if (newStop.city && newStop.country) {
-      const newStopData = {
-        id: Math.max(...stops.map(s => s.id), 0) + 1,
-        city: `${newStop.city}, ${newStop.country}`,
-        dates: `${newStop.arrival} – ${newStop.departure}`,
-        activities: []
-      };
-      setStops([...stops, newStopData]);
+    if (new Date(newStop.endDate) <= new Date(newStop.startDate)) {
+      setError('End date must be after start date');
+      return;
+    }
+
+    try {
+      const response = await tripStopAPI.create(
+        tripId,
+        newStop.city,
+        newStop.country,
+        newStop.startDate,
+        newStop.endDate,
+        newStop.notes
+      );
+      const createdStop = response.data?.stop || response.stop;
+      setStops([...stops, { ...createdStop, activities: [] }]);
       setShowModal(false);
-      setNewStop({ city: '', country: '', arrival: '', departure: '', notes: '' });
+      setNewStop({ city: '', country: '', startDate: '', endDate: '', notes: '' });
+      setError(null);
+    } catch (err) {
+      console.error('Failed to add stop:', err);
+      setError(err?.message || 'Failed to add stop');
     }
   };
 
-  const handleDeleteStop = (stopId) => {
-    setStops(stops.filter(stop => stop.id !== stopId));
+  const handleDeleteStop = async (stopId) => {
+    try {
+      await tripStopAPI.delete(tripId, stopId);
+      setStops(stops.filter(stop => stop.id !== stopId));
+    } catch (err) {
+      console.error('Failed to delete stop:', err);
+      setError(err?.message || 'Failed to delete stop');
+    }
   };
 
-  const handleAddActivity = () => {
-    if (newActivity.name && newActivity.cost && selectedStopId !== null) {
-      const costValue = parseInt(newActivity.cost.replace(/[^\d]/g, '')) || 0;
+  const handleAddActivity = async () => {
+    if (!newActivity.name || !newActivity.cost || selectedStopId === null) {
+      setError('Please fill in activity name and cost');
+      return;
+    }
+
+    try {
+      const costValue = parseFloat(newActivity.cost) || 0;
+      const response = await activityAPI.create(
+        tripId,
+        selectedStopId,
+        newActivity.name,
+        '',
+        costValue,
+        parseFloat(newActivity.durationHours) || 0,
+        newActivity.category
+      );
+      const createdActivity = response.data?.activity || response.activity;
+      
       setStops(stops.map(stop => {
         if (stop.id === selectedStopId) {
           return {
             ...stop,
-            activities: [...stop.activities, { id: Date.now(), name: newActivity.name, cost: costValue }]
+            activities: [...(stop.activities || []), createdActivity]
           };
         }
         return stop;
       }));
-      setNewActivity({ name: '', cost: '' });
+      setNewActivity({ name: '', cost: '', category: '', durationHours: '' });
       setShowActivityModal(false);
+      setSelectedStopId(null);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to add activity:', err);
+      setError(err?.message || 'Failed to add activity');
     }
   };
 
-  const handleDeleteActivity = (stopId, activityId) => {
-    setStops(stops.map(stop => {
-      if (stop.id === stopId) {
-        return {
-          ...stop,
-          activities: stop.activities.filter(activity => activity.id !== activityId)
-        };
-      }
-      return stop;
-    }));
+  const handleDeleteActivity = async (stopId, activityId) => {
+    try {
+      await activityAPI.delete(tripId, stopId, activityId);
+      setStops(stops.map(stop => {
+        if (stop.id === stopId) {
+          return {
+            ...stop,
+            activities: stop.activities.filter(activity => activity.id !== activityId)
+          };
+        }
+        return stop;
+      }));
+    } catch (err) {
+      console.error('Failed to delete activity:', err);
+      setError(err?.message || 'Failed to delete activity');
+    }
   };
+
+  const handleUpdateBudget = async () => {
+    try {
+      const newBudgetAmount = parseFloat(tempBudgetInput) || 0;
+      
+      if (newBudgetAmount <= 0) {
+        setError('Budget must be greater than 0');
+        return;
+      }
+
+      let updatedBudget;
+      if (budget) {
+        // Update existing budget
+        const response = await budgetAPI.update(tripId, newBudgetAmount);
+        updatedBudget = response.data?.budget || response.budget || { ...budget, total_cost: newBudgetAmount };
+      } else {
+        // Create new budget
+        const response = await budgetAPI.create(tripId, newBudgetAmount);
+        updatedBudget = response.data?.budget || response.budget || { id: null, trip_id: tripId, total_cost: newBudgetAmount };
+      }
+
+      setBudget(updatedBudget);
+      setTempBudgetInput(newBudgetAmount.toString());
+      setEditingBudget(false);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to update budget:', err);
+      setError(err?.message || 'Failed to update budget');
+    }
+  };
+
+  if (authLoading || loading) {
+    return <div className="loading">Loading trip details...</div>;
+  }
+
+  if (error && !trip) {
+    return (
+      <div className="error-container">
+        <p className="error">{error}</p>
+        <Button onClick={() => navigate('/dashboard')}>Back to Dashboard</Button>
+      </div>
+    );
+  }
+
+  if (!trip) {
+    return (
+      <div className="error-container">
+        <p className="error">Trip not found</p>
+        <Button onClick={() => navigate('/dashboard')}>Back to Dashboard</Button>
+      </div>
+    );
+  }
+
+  const startDate = trip.start_date ? new Date(trip.start_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
+  const endDate = trip.end_date ? new Date(trip.end_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
 
   return (
     <div className="itinerary-page">
@@ -125,8 +262,8 @@ const Itinerary = () => {
         <Button variant="secondary" onClick={() => navigate('/dashboard')}>
           ← Back to Trips
         </Button>
-        <h1>Grand European Journey</h1>
-        <p>From May 10, 2025 to June 15, 2025</p>
+        <h1>{trip.name || 'Trip Details'}</h1>
+        <p>From {startDate} to {endDate}</p>
       </div>
 
       <div className="itinerary-content">
@@ -136,51 +273,65 @@ const Itinerary = () => {
             <Button onClick={() => setShowModal(true)}>+ Add Stop</Button>
           </div>
 
-          <div className="timeline">
-            {stops.map((stop, index) => (
-              <div key={stop.id} className="timeline-item">
-                <div className="timeline-marker">{index + 1}</div>
-                <div className="timeline-card">
-                  <div className="timeline-card-header">
-                    <div>
-                      <h3>{stop.city}</h3>
-                      <span>{stop.dates}</span>
+          {error && <div className="error-message">{error}</div>}
+
+          {stops.length === 0 ? (
+            <div className="empty-state">
+              <p>No stops planned yet. Add a stop to get started!</p>
+              <Button onClick={() => setShowModal(true)}>Add First Stop</Button>
+            </div>
+          ) : (
+            <div className="timeline">
+              {stops.map((stop, index) => (
+                <div key={stop.id} className="timeline-item">
+                  <div className="timeline-marker">{index + 1}</div>
+                  <div className="timeline-card">
+                    <div className="timeline-card-header">
+                      <div>
+                        <h3>{stop.city}, {stop.country}</h3>
+                        <span>{stop.start_date || stop.startDate} – {stop.end_date || stop.endDate}</span>
+                      </div>
+                      <button
+                        className="delete-stop-btn"
+                        onClick={() => handleDeleteStop(stop.id)}
+                        title="Remove this stop"
+                      >
+                        ✕
+                      </button>
                     </div>
+                    {stop.notes && <p className="stop-notes">{stop.notes}</p>}
+                    <ul>
+                      {stop.activities && stop.activities.length > 0 ? (
+                        stop.activities.map((activity) => (
+                          <li key={activity.id} className="activity-item">
+                            <span>{activity.name} – ₹{(activity.cost || 0).toLocaleString('en-IN')}</span>
+                            <button
+                              className="delete-activity-btn"
+                              onClick={() => handleDeleteActivity(stop.id, activity.id)}
+                              title="Remove activity"
+                            >
+                              ✕
+                            </button>
+                          </li>
+                        ))
+                      ) : (
+                        <li className="no-activities">No activities added yet</li>
+                      )}
+                    </ul>
                     <button
-                      className="delete-stop-btn"
-                      onClick={() => handleDeleteStop(stop.id)}
-                      title="Remove this stop"
+                      className="add-activity-btn"
+                      onClick={() => {
+                        setSelectedStopId(stop.id);
+                        setShowActivityModal(true);
+                      }}
                     >
-                      ✕
+                      + Add Activity
                     </button>
                   </div>
-                  <ul>
-                    {stop.activities.map((activity) => (
-                      <li key={activity.id} className="activity-item">
-                        <span>{activity.name} – ₹{activity.cost.toLocaleString('en-IN')}</span>
-                        <button
-                          className="delete-activity-btn"
-                          onClick={() => handleDeleteActivity(stop.id, activity.id)}
-                          title="Remove activity"
-                        >
-                          ✕
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                  <button
-                    className="add-activity-btn"
-                    onClick={() => {
-                      setSelectedStopId(stop.id);
-                      setShowActivityModal(true);
-                    }}
-                  >
-                    + Add Activity
-                  </button>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="budget-section">
@@ -190,75 +341,106 @@ const Itinerary = () => {
               ⚠️ Over Budget: You've exceeded by ₹{Math.abs(remainingBudget).toLocaleString('en-IN')}
             </div>
           )}
-          <div className={`budget-card ${isOverBudget ? 'over-budget' : ''}`}>
-            <div className="budget-header">
-              <div className="budget-icon">💰</div>
-              <span className={`status-badge ${isOverBudget ? 'warning' : 'success'}`}>
-                {isOverBudget ? '⚠️ Over Budget' : '✓ Within Budget'}
-              </span>
+          {budgetLimit === 0 && !editingBudget ? (
+            <div className="empty-state">
+              <p>No budget set yet. Set a budget to track expenses!</p>
+              <Button onClick={() => {
+                setEditingBudget(true);
+                setTempBudgetInput('');
+              }}>+ Set Budget</Button>
             </div>
-            <div className="budget-progress">
-              <div className="progress-bar">
-                <div 
-                  className={`progress-fill ${isOverBudget ? 'over' : ''}`}
-                  style={{ width: `${Math.min(budgetPercentage, 100)}%` }}
+          ) : editingBudget && budgetLimit === 0 ? (
+            <div className="budget-card">
+              <h3>Set Your Budget</h3>
+              <div className="budget-input-group">
+                <input
+                  type="number"
+                  value={tempBudgetInput}
+                  onChange={(e) => setTempBudgetInput(e.target.value)}
+                  placeholder="Enter budget amount"
+                  className="budget-input"
+                  min="0"
+                  step="100"
                 />
-              </div>
-              <p className="progress-text">{Math.min(Math.round(budgetPercentage), 100)}% of budget used</p>
-            </div>
-            <div className="budget-details">
-              <div className="budget-row">
-                <span>Total Spent:</span>
-                <span className={isOverBudget ? 'over-text' : ''}>₹{totalCost.toLocaleString('en-IN')}</span>
-              </div>
-              <div className="budget-row">
-                <span>Budget Limit:</span>
-                <span>₹{budgetLimit.toLocaleString('en-IN')}</span>
-              </div>
-              <div className={`budget-row remaining ${isOverBudget ? 'negative' : 'positive'}`}>
-                <span>Remaining:</span>
-                <span>₹{Math.abs(remainingBudget).toLocaleString('en-IN')}</span>
-              </div>
-            </div>
-            <div className="budget-actions">
-              {!editingBudget ? (
-                <button 
-                  className="edit-budget-btn"
-                  onClick={() => {
-                    setEditingBudget(true);
-                    setTempBudgetInput(budgetLimit.toString());
-                  }}
-                >
-                  ✏️ Edit Budget
+                <button className="save-budget-btn" onClick={handleUpdateBudget}>
+                  Save Budget
                 </button>
-              ) : (
-                <div className="budget-input-group">
-                  <input
-                    type="number"
-                    value={tempBudgetInput}
-                    onChange={(e) => setTempBudgetInput(e.target.value)}
-                    placeholder="Enter budget"
-                    className="budget-input"
+                <button className="cancel-budget-btn" onClick={() => setEditingBudget(false)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className={`budget-card ${isOverBudget ? 'over-budget' : ''}`}>
+              <div className="budget-header">
+                <div className="budget-icon">💰</div>
+                <span className={`status-badge ${isOverBudget ? 'warning' : 'success'}`}>
+                  {isOverBudget ? '⚠️ Over Budget' : '✓ Within Budget'}
+                </span>
+              </div>
+              <div className="budget-progress">
+                <div className="progress-bar">
+                  <div 
+                    className={`progress-fill ${isOverBudget ? 'over' : ''}`}
+                    style={{ width: `${Math.min(budgetPercentage, 100)}%` }}
                   />
-                  <button className="save-budget-btn" onClick={handleUpdateBudget}>
-                    Save
-                  </button>
-                  <button className="cancel-budget-btn" onClick={() => setEditingBudget(false)}>
-                    Cancel
-                  </button>
                 </div>
-              )}
+                <p className="progress-text">{Math.min(Math.round(budgetPercentage), 100)}% of budget used</p>
+              </div>
+              <div className="budget-details">
+                <div className="budget-row">
+                  <span>Total Spent:</span>
+                  <span className={isOverBudget ? 'over-text' : ''}>₹{totalCost.toLocaleString('en-IN')}</span>
+                </div>
+                <div className="budget-row">
+                  <span>Budget Limit:</span>
+                  <span>₹{budgetLimit.toLocaleString('en-IN')}</span>
+                </div>
+                <div className={`budget-row remaining ${isOverBudget ? 'negative' : 'positive'}`}>
+                  <span>Remaining:</span>
+                  <span>₹{Math.abs(remainingBudget).toLocaleString('en-IN')}</span>
+                </div>
+              </div>
+              <div className="budget-actions">
+                {!editingBudget ? (
+                  <button 
+                    className="edit-budget-btn"
+                    onClick={() => {
+                      setEditingBudget(true);
+                      setTempBudgetInput(budgetLimit.toString());
+                    }}
+                  >
+                    ✏️ Edit Budget
+                  </button>
+                ) : (
+                  <div className="budget-input-group">
+                    <input
+                      type="number"
+                      value={tempBudgetInput}
+                      onChange={(e) => setTempBudgetInput(e.target.value)}
+                      placeholder="Enter budget"
+                      className="budget-input"
+                    />
+                    <button className="save-budget-btn" onClick={handleUpdateBudget}>
+                      Save
+                    </button>
+                    <button className="cancel-budget-btn" onClick={() => setEditingBudget(false)}>
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className="budget-tips">
+                <p>💡 <strong>Tip:</strong> {
+                  isOverBudget 
+                    ? 'Remove activities or increase budget to stay on track.'
+                    : remainingBudget < 5000 
+                    ? 'Limited budget left. Plan carefully!'
+                    : 'Good budget flexibility. Enjoy your trip!'
+                }</p>
+              </div>
             </div>
-            <div className="budget-tips">
-              <p>💡 <strong>Tip:</strong> {
-                isOverBudget 
-                  ? 'Remove activities or increase budget to stay on track.'
-                  : remainingBudget < 5000 
-                  ? 'Limited budget left. Plan carefully!'
-                  : 'Good budget flexibility. Enjoy your trip!'
-              }</p>
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -285,14 +467,14 @@ const Itinerary = () => {
               <Input
                 type="date"
                 label="Arrival"
-                value={newStop.arrival}
-                onChange={(e) => setNewStop({ ...newStop, arrival: e.target.value })}
+                value={newStop.startDate}
+                onChange={(e) => setNewStop({ ...newStop, startDate: e.target.value })}
               />
               <Input
                 type="date"
                 label="Departure"
-                value={newStop.departure}
-                onChange={(e) => setNewStop({ ...newStop, departure: e.target.value })}
+                value={newStop.endDate}
+                onChange={(e) => setNewStop({ ...newStop, endDate: e.target.value })}
               />
             </div>
             <Input
@@ -331,11 +513,24 @@ const Itinerary = () => {
               onChange={(e) => setNewActivity({ ...newActivity, cost: e.target.value })}
               required
             />
+            <Input
+              label="Duration (hours)"
+              type="number"
+              placeholder="e.g., 2"
+              value={newActivity.durationHours}
+              onChange={(e) => setNewActivity({ ...newActivity, durationHours: e.target.value })}
+            />
+            <Input
+              label="Category (Optional)"
+              placeholder="e.g., Museum, Restaurant"
+              value={newActivity.category}
+              onChange={(e) => setNewActivity({ ...newActivity, category: e.target.value })}
+            />
             <div className="modal-actions">
               <Button variant="secondary" onClick={() => setShowActivityModal(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleAddActivity}>Add Activity</Button>
+              <Button onClick={() => handleAddActivity(selectedStopId)}>Add Activity</Button>
             </div>
           </div>
         </div>
