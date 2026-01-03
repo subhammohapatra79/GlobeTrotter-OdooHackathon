@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import CreateTrip from './pages/CreateTrip';
 import Itinerary from './pages/Itinerary';
 import Profile from './pages/profile.jsx';
+import AdminDashboard from './pages/AdminDashboard';
 import Navbar from './components/common/Navbar';
 import './styles/main.css';
 
@@ -21,6 +22,7 @@ function App() {
         <Route path="/itinerary" element={<Itinerary />} />
         <Route path="/itinerary/:tripId" element={<Itinerary />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/" element={<Dashboard />} />
       </Routes>
     </Router>
