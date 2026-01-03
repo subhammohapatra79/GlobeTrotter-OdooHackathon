@@ -1,58 +1,109 @@
-/**
- * CreateTrip page
- * Form to create a new trip
- */
-
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import useAuth from '../hooks/useAuth';
-import { tripAPI } from '../services/api';
-import TripForm from '../components/trips/TripForm';
+import Input from '../components/common/Input';
+import Button from '../components/common/Button';
 import '../styles/create-trip.css';
 
 const CreateTrip = () => {
-  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
-  if (!isAuthenticated) {
-    navigate('/login');
-    return null;
-  }
+  const [formData, setFormData] = useState({
+    name: '',
+    destination: '',
+    startDate: '',
+    endDate: ''
+  });
 
-  const handleSubmit = async (formData) => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await tripAPI.create(
-        formData.name,
-        formData.description,
-        formData.startDate,
-        formData.endDate
-      );
+  const handleChange = (e) => {
+    setFormData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }));
+  };
 
-      if (response.data?.trip) {
-        navigate(`/itinerary/${response.data.trip.id}`);
-      }
-    } catch (err) {
-      setError(err?.message || 'Failed to create trip');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    // Backend / AI integration later
+    console.log(formData);
   };
 
   return (
     <div className="create-trip-page">
-      <div className="create-trip-container">
-        <h1>Plan Your Trip</h1>
-        <p>Start by creating a new trip and adding details</p>
+      {/* Header */}
+      <div className="create-trip-header">
+        <h1>Plan a New Trip</h1>
+        <p>Create your journey step by step</p>
+      </div>
 
-        {error && <div className="error-message">{error}</div>}
+      {/* Main Layout */}
+      <div className="create-trip-layout">
 
-        <TripForm onSubmit={handleSubmit} loading={loading} />
+        {/* Form */}
+        <form className="trip-form" onSubmit={handleSubmit}>
+          <Input
+            label="Trip Name"
+            name="name"
+            placeholder="e.g., Europe Summer Trip"
+            value={formData.name}
+            onChange={handleChange}
+            required
+          />
+
+          <Input
+            label="Select a Place"
+            name="destination"
+            placeholder="e.g., Paris, France"
+            value={formData.destination}
+            onChange={handleChange}
+            required
+          />
+
+          <div className="form-row">
+            <Input
+              type="date"
+              label="Start Date"
+              name="startDate"
+              value={formData.startDate}
+              onChange={handleChange}
+              required
+            />
+
+            <Input
+              type="date"
+              label="End Date"
+              name="endDate"
+              value={formData.endDate}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <div className="form-actions">
+            <Button type="submit">Create Trip</Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => navigate('/dashboard')}
+            >
+              Cancel
+            </Button>
+          </div>
+        </form>
+
+        {/* Suggestions */}
+        <div className="suggestions-section">
+          <h2>Suggestions for Places & Activities</h2>
+
+          <div className="suggestions-grid">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="suggestion-card">
+                <div className="suggestion-placeholder" />
+                <p>AI suggestion will appear here</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
       </div>
     </div>
   );
