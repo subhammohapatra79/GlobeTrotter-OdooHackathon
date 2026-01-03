@@ -1,83 +1,63 @@
-/**
- * Login page
- */
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import '../styles/Login.css';
 
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import useAuth from '../hooks/useAuth';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
-import '../styles/auth-pages.css';
+import useAuth from '../hooks/useAuth';
 
 const Login = () => {
   const { login, loading, error } = useAuth();
   const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
-  const [errors, setErrors] = useState({});
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
-    }
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    const newErrors = {};
-    if (!formData.email) newErrors.email = 'Email is required';
-    if (!formData.password) newErrors.password = 'Password is required';
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
 
     const result = await login(formData.email, formData.password);
-    if (result.success) {
+
+    if (result?.success) {
       navigate('/dashboard');
     }
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <h1>Welcome Back</h1>
-        <p>Sign in to your GlobeTrotter account</p>
+    <div className="login-page">
+      <div className="login-card">
+        <h1 className="login-title">Welcome Back</h1>
+        <p className="login-subtitle">
+          Log in and continue your journey
+        </p>
 
-        {error && <div className="error-message">{error}</div>}
+        {error && <div className="login-error">{error}</div>}
 
-        <form onSubmit={handleSubmit} className="auth-form">
+        <form className="login-form" onSubmit={handleSubmit}>
           <Input
+            label="Email"
             type="email"
             name="email"
-            label="Email"
             placeholder="you@example.com"
             value={formData.email}
             onChange={handleChange}
-            error={errors.email}
             required
           />
 
           <Input
+            label="Password"
             type="password"
             name="password"
-            label="Password"
             placeholder="••••••••"
             value={formData.password}
             onChange={handleChange}
-            error={errors.password}
             required
           />
 
@@ -86,8 +66,9 @@ const Login = () => {
           </Button>
         </form>
 
-        <p className="auth-link">
-          Don't have an account? <Link to="/signup">Sign up</Link>
+        <p className="login-footer">
+          Don’t have an account?{' '}
+          <Link to="/signup">Sign up</Link>
         </p>
       </div>
     </div>
