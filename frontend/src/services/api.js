@@ -14,6 +14,9 @@ const api = axios.create({
   }
 });
 
+// Log connection to backend
+console.log('🌍 GlobeTrotter Frontend: Connected to server');
+
 // Add token to requests if it exists
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
@@ -25,26 +28,57 @@ api.interceptors.request.use((config) => {
 
 // Handle responses
 api.interceptors.response.use(
-  (response) => response.data,
+  (response) => {
+    console.log('API Response:', response.data);
+    return response.data;
+  },
   (error) => {
+    console.error('API Error:', error.response?.data || error.message);
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+      // Don't redirect for auth endpoints (login/signup)
+      if (!error.config.url.includes('/auth/')) {
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error.response?.data || error);
   }
 );
 
 /**
+ * Cities endpoints
+ */
+export const citiesAPI = {
+  getPopular: () =>
+    api.get('/cities/popular')
+};
+
+/**
  * Auth endpoints
  */
 export const authAPI = {
+  getCurrentUser: () =>
+    api.get('/auth/me'),
   signup: (email, password, firstName, lastName) =>
     api.post('/auth/signup', { email, password, firstName, lastName }),
   login: (email, password) =>
-    api.post('/auth/login', { email, password }),
-  getCurrentUser: () =>
-    api.get('/auth/me')
+    api.post('/auth/login', { email, password })
+};
+
+/**
+ * Dashboard endpoints
+ */
+export const dashboardAPI = {
+  getSummary: () =>
+    api.get('/dashboard')
+};
+
+/**
+ * Regions endpoints
+ */
+export const regionsAPI = {
+  getAll: () =>
+    api.get('/regions')
 };
 
 /**

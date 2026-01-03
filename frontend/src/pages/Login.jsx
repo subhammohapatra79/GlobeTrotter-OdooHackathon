@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import '../styles/Login.css';
 
@@ -7,7 +7,7 @@ import Button from '../components/common/Button';
 import useAuth from '../hooks/useAuth';
 
 const Login = () => {
-  const { login, loading, error } = useAuth();
+  const { login, loading, error, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -22,13 +22,21 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('Login attempt with:', formData.email);
 
     const result = await login(formData.email, formData.password);
+    console.log('Login result:', result);
+    // Don't navigate here - let the useEffect handle it
+  };
 
-    if (result?.success) {
+  // Navigate to dashboard when authenticated
+  useEffect(() => {
+    console.log('Login component - isAuthenticated:', isAuthenticated);
+    if (isAuthenticated) {
+      console.log('User is authenticated, navigating to dashboard');
       navigate('/dashboard');
     }
-  };
+  }, [isAuthenticated, navigate]);
 
   return (
     <div className="login-page">

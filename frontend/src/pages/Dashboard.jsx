@@ -7,7 +7,7 @@ import Button from '../components/common/Button';
 import '../styles/dashboard.css';
 
 const Dashboard = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, authLoading } = useAuth();
   const navigate = useNavigate();
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,15 +24,33 @@ const Dashboard = () => {
   ];
 
   useEffect(() => {
-    // Authentication check removed - dashboard accessible to all
+    console.log('Dashboard useEffect - isAuthenticated:', isAuthenticated, 'authLoading:', authLoading, 'user:', user);
+    
+    // Wait for auth verification to complete
+    if (authLoading) {
+      console.log('Auth still loading, waiting...');
+      return;
+    }
+    
+    // Check if authenticated after verification is complete
+    if (!isAuthenticated) {
+      console.log('Not authenticated, redirecting to login');
+      navigate('/login');
+      return;
+    }
+    
+    console.log('Authenticated, fetching trips');
     fetchTrips();
-  }, []);
+  }, [isAuthenticated, authLoading, navigate]);
 
   const fetchTrips = async () => {
     try {
       setLoading(true);
       const response = await tripAPI.getAll();
-      setTrips(response.data?.trips || []);
+      console.log('Trips response:', response);
+      // Response is already extracted by interceptor, so access trips directly
+      const tripsData = response.data?.trips || response.trips || [];
+      setTrips(tripsData);
     } catch (err) {
       console.error('Failed to fetch trips:', err);
     } finally {
@@ -49,6 +67,13 @@ const Dashboard = () => {
       console.error('Failed to delete trip:', err);
     }
   };
+
+  if (authLoading) {
+    console.log('Dashboard rendering - auth is still loading');
+    return <div className="loading">Loading...</div>;
+  }
+
+  console.log('Dashboard rendering - authenticated:', isAuthenticated, 'trips count:', trips.length, 'user:', user);
 
   return (
     <div className="dashboard-wrapper">

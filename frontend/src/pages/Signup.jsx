@@ -1,11 +1,14 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import '../styles/Signup.css';
 
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
+import useAuth from '../hooks/useAuth';
 
 const Signup = () => {
+  const { signup, loading, error, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -99,15 +102,27 @@ const Signup = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = validateInputs();
-    if (Object.keys(newErrors).length === 0) {
-      console.log(formData); // UI only
-    } else {
+    if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+      return;
     }
+
+    const result = await signup(formData.email, formData.password, formData.firstName, formData.lastName);
+    if (!result.success) {
+      setErrors({ general: result.error?.message || 'Signup failed' });
+    }
+    // Don't navigate here - let the useEffect handle it
   };
+
+  // Navigate to dashboard when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
 
   return (
     <div className="signup-page">
@@ -204,9 +219,11 @@ const Signup = () => {
             />
           </div>
 
+          {errors.general && <p className="error">{errors.general}</p>}
+
           {/* CTA */}
-          <Button type="submit" variant="primary">
-            Create Account
+          <Button type="submit" variant="primary" disabled={loading}>
+            {loading ? 'Creating Account...' : 'Create Account'}
           </Button>
         </form>
 
