@@ -1,37 +1,109 @@
-/* Dashboard styles */
-
-.dashboard {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem 1rem;
+.dashboard-wrapper {
+  position: relative;
+  min-height: 100vh;
+  background-color: #f8fafc;
+  font-family: 'Inter', sans-serif;
 }
 
-.dashboard-header {
+/* World Map Subtle Overlay */
+.world-map-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('https://www.transparenttextures.com/patterns/world-map.png');
+  opacity: 0.05;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.banner-area {
+  height: 250px;
+  background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1200&q=80');
+  background-size: cover;
+  background-position: center;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 3rem;
-  padding-bottom: 2rem;
-  border-bottom: 2px solid #e5e7eb;
+  justify-content: center;
+  color: white;
 }
 
-.dashboard-header h1 {
-  margin-bottom: 0.5rem;
+.content-container {
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
+  margin: -40px auto 0;
+  padding: 0 20px 60px;
 }
 
-.dashboard-header p {
-  color: #6b7280;
-  margin: 0;
+/* Tool Bar / Search */
+.tool-bar {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+  display: flex;
+  gap: 15px;
+  margin-bottom: 40px;
 }
 
-@media (max-width: 768px) {
-  .dashboard-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
+.search-box {
+  flex: 2;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
 
-  .dashboard-header button {
-    width: 100%;
-  }
+.filter-set {
+  flex: 1;
+  display: flex;
+  gap: 10px;
+}
+
+/* Region Image Cards */
+.regions-grid {
+  display: flex;
+  gap: 15px;
+  overflow-x: auto;
+  padding-bottom: 15px;
+  scrollbar-width: thin;
+}
+
+.region-card-image {
+  position: relative;
+  min-width: 200px;
+  height: 130px;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.region-card-image:hover {
+  transform: translateY(-5px);
+}
+
+.region-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.region-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(transparent, rgba(0,0,0,0.7));
+  display: flex;
+  align-items: flex-end;
+  padding: 12px;
+  color: white;
+  font-weight: 600;
+}
+
+/* Buttons */
+.btn-plan {
+  background-color: #f0541e !important; /* Brand Orange */
+  border-radius: 50px !important;
+  padding: 10px 25px !important;
 }
