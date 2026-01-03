@@ -1,124 +1,114 @@
-/**
- * Signup page
- */
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import '../styles/Signup.css';
 
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import useAuth from '../hooks/useAuth';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
-import '../styles/auth-pages.css';
 
 const Signup = () => {
-  const { signup, loading, error } = useAuth();
-  const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
     firstName: '',
-    lastName: ''
+    lastName: '',
+    email: '',
+    phone: '',
+    city: '',
+    country: '',
+    bio: ''
   });
-  const [errors, setErrors] = useState({});
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
-    }
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    
-    const newErrors = {};
-    if (!formData.email) newErrors.email = 'Email is required';
-    if (!formData.password || formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-    }
-    if (!formData.firstName) newErrors.firstName = 'First name is required';
-    if (!formData.lastName) newErrors.lastName = 'Last name is required';
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-
-    const result = await signup(
-      formData.email,
-      formData.password,
-      formData.firstName,
-      formData.lastName
-    );
-    if (result.success) {
-      navigate('/dashboard');
-    }
+    console.log(formData); // UI only
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <h1>Get Started</h1>
-        <p>Create your GlobeTrotter account</p>
+    <div className="signup-page">
+      <div className="signup-card">
+        <h1 className="signup-title">Create Account</h1>
+        <p className="signup-subtitle">
+          Join GlobeTrotter and start your journey
+        </p>
 
-        {error && <div className="error-message">{error}</div>}
-
-        <form onSubmit={handleSubmit} className="auth-form">
-          <div className="form-row">
+        <form className="signup-form" onSubmit={handleSubmit}>
+          {/* Personal Info */}
+          <div className="signup-grid">
             <Input
-              name="firstName"
               label="First Name"
+              name="firstName"
               placeholder="John"
               value={formData.firstName}
               onChange={handleChange}
-              error={errors.firstName}
               required
             />
+
             <Input
-              name="lastName"
               label="Last Name"
+              name="lastName"
               placeholder="Doe"
               value={formData.lastName}
               onChange={handleChange}
-              error={errors.lastName}
               required
+            />
+
+            <Input
+              label="Email"
+              type="email"
+              name="email"
+              placeholder="you@example.com"
+              value={formData.email}
+              onChange={handleChange}
+              required
+            />
+
+            <Input
+              label="Phone"
+              name="phone"
+              placeholder="+91 9876543210"
+              value={formData.phone}
+              onChange={handleChange}
+            />
+
+            <Input
+              label="City"
+              name="city"
+              placeholder="Bhubaneswar"
+              value={formData.city}
+              onChange={handleChange}
+            />
+
+            <Input
+              label="Country"
+              name="country"
+              placeholder="India"
+              value={formData.country}
+              onChange={handleChange}
             />
           </div>
 
-          <Input
-            type="email"
-            name="email"
-            label="Email"
-            placeholder="you@example.com"
-            value={formData.email}
-            onChange={handleChange}
-            error={errors.email}
-            required
-          />
+          {/* About - Full width */}
+          <div className="signup-textarea signup-textarea-full">
+            <label>Additional Information</label>
+            <textarea
+              name="bio"
+              placeholder="Tell us about your travel preferences..."
+              value={formData.bio}
+              onChange={handleChange}
+              rows="3"
+            />
+          </div>
 
-          <Input
-            type="password"
-            name="password"
-            label="Password"
-            placeholder="At least 6 characters"
-            value={formData.password}
-            onChange={handleChange}
-            error={errors.password}
-            required
-          />
-
-          <Button type="submit" disabled={loading}>
-            {loading ? 'Creating Account...' : 'Sign Up'}
+          {/* CTA */}
+          <Button type="submit" variant="primary">
+            Create Account
           </Button>
         </form>
 
-        <p className="auth-link">
+        <p className="signup-footer">
           Already have an account? <Link to="/login">Sign in</Link>
         </p>
       </div>
