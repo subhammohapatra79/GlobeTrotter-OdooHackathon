@@ -1,0 +1,62 @@
+/* Trip Card styles */
+
+.trip-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s;
+}
+
+.trip-card:hover {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.trip-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 1rem;
+}
+
+.trip-header h3 {
+  margin: 0;
+  color: #1f2937;
+}
+
+.trip-duration {
+  background-color: #dbeafe;
+  color: #0c4a6e;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.trip-description {
+  color: #6b7280;
+  margin-bottom: 1rem;
+}
+
+.trip-dates {
+  background-color: #f9fafb;
+  padding: 1rem;
+  border-radius: 0.375rem;
+  margin-bottom: 1rem;
+}
+
+.trip-dates p {
+  margin: 0.5rem 0;
+  color: #4b5563;
+}
+
+.trip-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.trip-actions .btn {
+  flex: 1;
+}

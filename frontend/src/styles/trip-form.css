@@ -1,0 +1,32 @@
+/* Trip Form styles */
+
+.trip-form {
+  background: white;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.trip-form .form-group {
+  margin-bottom: 1.5rem;
+}
+
+.trip-form .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.trip-form button {
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .trip-form {
+    padding: 1.5rem;
+  }
+
+  .trip-form .form-row {
+    grid-template-columns: 1fr;
+  }
+}
